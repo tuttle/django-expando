@@ -9,22 +9,21 @@ class ExpandoManager(models.Manager):
             object_pk = smart_unicode(object.pk)
         )
 
+    def delete_for_object(self, object):
+        self.get_for_object(object).delete()
+
     def get_for_key(self, object, key):
-        return self.get_for_object(object).get(key=key).value
+        return self.get_for_object(object).get(key=key)
 
     def set_for_key(self, object, key):
-        value = object.__dict__[key]
-        try:
-            e = self.get_for_key(object, key)
-            e.value = value
-        except Expando.DoesNotExist:
-            e = self.model(
-                content_type = ContentType.objects.get_for_model(object),
-                object_pk = smart_unicode(object.pk),
-                key = key,
-                value = value
-            )
-        e.save()
+        value = smart_unicode(object.__dict__[key])
+        e = self.model(
+            content_type = ContentType.objects.get_for_model(object),
+            object_pk = smart_unicode(object.pk),
+            key = key,
+            value = value
+        )
+        e.save(force_insert=True)
 
 class Expando(models.Model):
     content_type = models.ForeignKey(ContentType)
@@ -43,31 +42,43 @@ class ExpandoModel(models.Model):
     class Meta:
         abstract = True
 
-    def save(self, force_insert=False, force_update=False):
-        super(ExpandoModel, self).save(force_insert, force_update)
+    def save(self, *args, **kwargs):
+        skip_expando_fields = kwargs.pop('skip_expando_fields', False)
 
-        assert self.id
-        attrs = set(self.__dict__)
-        fields = set(f.name for f in self._meta.fields)
-        for key in attrs - fields:
-            if not key.startswith('_'):
-                Expando.objects.set_for_key(self, key)
+        r = super(ExpandoModel, self).save(*args, **kwargs)
+
+        if not skip_expando_fields:
+            assert self.pk
+
+            Expando.objects.delete_for_object(self)
+
+            attrs = set(self.__dict__)
+            fields = set(f.name for f in self._meta.fields)
+            for key in attrs - fields:
+                if not key.startswith('_') and not key.endswith('_id'):
+                    Expando.objects.set_for_key(self, key)
+
+        return r
+
+    def _load_expando_fields(self):
+        if not hasattr(self, '_expando_fields_cache'):
+            qs = Expando.objects.get_for_object(self).order_by('id')
+            self._expando_fields_cache = dict(qs.values_list('key', 'value'))
                                 
-    def _get_expando_value(self, key):
-        if not hasattr(self, '_expando_values'):
-            qs = Expando.objects.get_for_object(self)
-            self._expando_values = dict( qs.values_list('key', 'value') )
-        return self._expando_values[key]
-
     def __getattr__(self, key):
-        if not key.startswith('_') and self.id:
+        if not key.startswith('_') and self.pk:
             try:
-                return self._get_expando_value(key)
+                self._load_expando_fields()
+                return self._expando_fields_cache[key]
             except KeyError:
                 raise AttributeError("There is neither regular field nor "
                                      "expando field '%s' for %s" % (key, self))
         else:
             raise AttributeError("'%s' has no attribute '%s'" % (self, key))
+
+    def get_expando_fields(self):
+        self._load_expando_fields()
+        return self._expando_fields_cache.copy()
 
 def doctest():
     """

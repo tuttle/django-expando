@@ -11,4 +11,5 @@ to converge to maturity.
 Please forward any related thoughts to Vlada Macek <macek@sandbox.cz>,
 greatly appreciated.
 
-Thanks to Peter Baumgartner, http://www.lincolnloop.com, for savvy guidance.
+Thanks to Peter Baumgartner, http://www.lincolnloop.com, for savvy guidance
+and sponsorship.
