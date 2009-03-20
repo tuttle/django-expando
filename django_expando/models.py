@@ -3,11 +3,13 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import smart_unicode
 
 class ExpandoManager(models.Manager):
+    def get_for_model(self, model):
+        ct = ContentType.objects.get_for_model(model)
+        return self.model.objects.filter(content_type=ct)
+
     def get_for_object(self, object):
-        return self.model.objects.filter(
-            content_type = ContentType.objects.get_for_model(object),
-            object_pk = smart_unicode(object.pk)
-        )
+        pk = smart_unicode(object.pk)
+        return self.get_for_model(object).filter(object_pk=pk)
 
     def delete_for_object(self, object):
         self.get_for_object(object).delete()
@@ -24,6 +26,13 @@ class ExpandoManager(models.Manager):
             value = value
         )
         e.save(force_insert=True)
+
+    def filter_for_model_qs(self, model_qs, **kwargs):
+        qs = self.get_for_model(model_qs.model)
+        for k,v in kwargs.items():
+            qs = qs.filter(key=k, value__iexact=v)
+        pks = qs.values_list('object_pk', flat=True)
+        return model_qs.filter(pk__in=pks)
 
 class Expando(models.Model):
     content_type = models.ForeignKey(ContentType)
