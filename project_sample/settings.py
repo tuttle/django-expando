@@ -14,12 +14,7 @@ SITE_ID = 1
 ROOT_URLCONF = 'project_sample.nothing'
 
 INSTALLED_APPS = (
-    'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.sites',
-    'django.contrib.admin',
-    'django.contrib.admindocs',
     'django_expando',
     'expando_tests',
 )

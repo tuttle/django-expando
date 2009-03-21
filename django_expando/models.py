@@ -46,6 +46,9 @@ class Expando(models.Model):
         unique_together = (("content_type", "object_pk", "key"),)
         db_table = 'django_expando'
 
+    def __unicode__(self):
+        return u'%s=%s, id=%d' % (self.key, self.value, self.id)
+
 class ExpandoModel(models.Model):
 
     class Meta:
@@ -78,7 +81,9 @@ class ExpandoModel(models.Model):
         if not key.startswith('_') and self.pk:
             try:
                 self._load_expando_fields()
-                return self._expando_fields_cache[key]
+                value = self._expando_fields_cache[key]
+                setattr(self, key, value)
+                return value
             except KeyError:
                 raise AttributeError("There is neither regular field nor "
                                      "expando field '%s' for %s" % (key, self))
@@ -104,16 +109,33 @@ def doctest():
 Traceback (most recent call last):
 ...
 AttributeError: 'ExpandoBasedModel object' has no attribute 'strange_field'
->>> o.expando_field = 14
+>>> o.expando_field1 = 14
 >>> o.save()
 >>> del o
 
 >>> o2 = ExpandoBasedModel.objects.get(existing_field='2') 
->>> o2.expando_field
+>>> o2.expando_field1
 u'14'
 >>> o2.another_field
 Traceback (most recent call last):
 ...
 AttributeError: There is neither regular field nor expando field 'another_field' for ExpandoBasedModel object
->>> 
+>>> o2.expando_field2 = 20
+>>> o2.expando_field1
+u'14'
+>>> o2.save()
+>>> del o2
+>>> o3 = ExpandoBasedModel.objects.get(existing_field='2')
+>>> o3.expando_field2
+u'20'
+>>> o3.expando_field1
+u'14'
+>>> o3.get_expando_fields()
+{u'expando_field1': u'14', u'expando_field2': u'20'}
+>>> o3.expando_field3 = 100
+>>> o3.save()
+>>> del o3
+>>> o4 = ExpandoBasedModel.objects.get(existing_field='2')
+>>> o4.get_expando_fields()
+{u'expando_field1': u'14', u'expando_field2': u'20', u'expando_field3': u'100'}
     """
