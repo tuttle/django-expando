@@ -3,8 +3,8 @@ from django_expando.models import Expando
 def expando_filter(model_qs, **kwargs):
     """ Filters the query set of the model having expando fields based on the
         value of the expando field. See tests in django_expando.models for usage.
+        TODO: Not very efficient and clever implementation...
     """
-    qs = Expando.objects
     for k,v in kwargs.items():
         try:
             k, lookup = k.split('__', 1)
@@ -12,8 +12,12 @@ def expando_filter(model_qs, **kwargs):
         except ValueError:
             lookup = ''
 
-        qs = qs.filter(**{ 'key': k, 'value' + lookup: v })
+        kw = { 'key': k, 'value' + lookup: v }
+        pks_ = Expando.objects.filter(**kw).values_list('object_pk', flat=True)
+        try:
+            pks = pks & set(pks_)
+        except UnboundLocalError:
+            pks = set(pks_)
 
-    pks = qs.values_list('object_pk', flat=True)
     return model_qs.filter(pk__in=pks)
 
