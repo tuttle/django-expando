@@ -197,6 +197,10 @@ u'14'
 >>> o6 = ExpandoBasedModel.objects.get(regular_field='2')
 >>> del o6.ef2
 >>> o6.save()
+>>> del o6
+
+>>> o7 = ExpandoBasedModel.objects.get(regular_field='2')
+>>> o7.save()
 
 >>> p = ExpandoBasedModel(regular_field=3)
 >>> p.ef1 = 9

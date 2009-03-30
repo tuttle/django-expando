@@ -4,9 +4,19 @@ django-expando
 A reusable Django app allowing model attributes to be assigned dynamically
 similar to App Engine's built-in expando class.
 
-Note: This is a very early publication of the source. The project will gain
-the usual sugar files and comments once the design and implementation starts
-to converge to maturity.
+Current features:
+
+* Not storing types: Any value is treated as string-like
+* Transparent on-demand loading (when first unknown attr is accessed)
+* Transparent saving on save()
+* Enumerating as dict
+* Basic filtering support
+* Tests
+
+See the tests in models.py for usage.
+
+Note: This is early publication of the source. The project will gain the
+usual sugar files and comments once the design and implementation matures.
 
 Please forward any related thoughts to Vlada Macek <macek@sandbox.cz>,
 greatly appreciated.
