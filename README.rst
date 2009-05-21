@@ -23,3 +23,10 @@ greatly appreciated.
 
 Thanks to Peter Baumgartner, http://www.lincolnloop.com, for savvy guidance
 and sponsorship.
+
+
+TODO
+====
+
+Investigate whether the DB index on UPPER("value") will help to improve the
+performance of icontains. Possible, according to a quick experiment.

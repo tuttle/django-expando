@@ -9,7 +9,7 @@ class Expando(models.Model):
     content_type = models.ForeignKey(ContentType)
     object_pk    = models.TextField('object id', db_index=True)
     key          = models.CharField('expando key', max_length=32, db_index=True)
-    value        = models.TextField('expando value')
+    value        = models.TextField('expando value', db_index=True)
     
     class Meta:
         unique_together = (('content_type', 'object_pk', 'key'),)
