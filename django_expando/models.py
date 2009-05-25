@@ -2,9 +2,6 @@ from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import smart_unicode
 
-def is_valid_expando_field_name(name):
-    return not name.startswith('_') and not name.endswith('_id')
-
 class Expando(models.Model):
     content_type = models.ForeignKey(ContentType)
     object_pk    = models.TextField('object id', db_index=True)
@@ -23,13 +20,19 @@ class ExpandoModel(models.Model):
     class Meta:
         abstract = True
 
+    def is_valid_expando_field_name(self, name):
+        field_names = self.__dict__.get('_regular_field_names')
+        if not field_names:
+            field_names = self.__dict__['_regular_field_names'] = set(f.name for f in self._meta.fields)
+        return not name.startswith('_') and not name.endswith('_id') and name not in field_names
+
     def get_expando_names(self):
         """ Returns the set of all attribute names that are expando in
             the instance (beyond regular fields).
         """
-        attrs = set(n for n in self.__dict__ if is_valid_expando_field_name(n))
-        fields = set(f.name for f in self._meta.fields)
-        return attrs - fields
+        if self._get_safe_pk():
+            self.load_expando_fields()
+        return set(n for n in self.__dict__ if self.is_valid_expando_field_name(n))
 
     def get_expando_qs(self):
         """ Gets the QuerySet of all expando fields for this instance.
@@ -101,7 +104,7 @@ class ExpandoModel(models.Model):
             first unknown attribute..
         """
 #        import sys; print >>sys.stderr, "<GETATTR %s>" % key
-        if is_valid_expando_field_name(key) and self._get_safe_pk():
+        if self.is_valid_expando_field_name(key) and self._get_safe_pk():
             self.load_expando_fields()
             try:
                 return self.__dict__[key]
@@ -119,7 +122,7 @@ class ExpandoModel(models.Model):
             the differences of the sets.
         """
 #        import sys; print >>sys.stderr, "<setATTR %s>" % key
-        if is_valid_expando_field_name(key) and self._get_safe_pk():
+        if self.is_valid_expando_field_name(key) and self._get_safe_pk():
             self.load_expando_fields()
         super(ExpandoModel, self).__setattr__(key, value)
 
@@ -128,15 +131,13 @@ class ExpandoModel(models.Model):
             the differences of the sets.
         """
 #        import sys; print >>sys.stderr, "<delATTR %s>" % key
-        if is_valid_expando_field_name(key) and self._get_safe_pk():
+        if self.is_valid_expando_field_name(key) and self._get_safe_pk():
             self.load_expando_fields()
         super(ExpandoModel, self).__delattr__(key)
 
     def get_expando_fields(self):
         """ Returns the dict of all expando fields.
         """
-        if self._get_safe_pk():
-            self.load_expando_fields()
         return dict( (k, self.__dict__[k]) for k in self.get_expando_names() )
 
 def doctest():
@@ -210,6 +211,8 @@ u'14'
 >>> from django_expando import expando_filter
 
 >>> qs = ExpandoBasedModel.objects.all()
+>>> qs
+[<ExpandoBasedModel: ExpandoBasedModel(regular_field=2)>, <ExpandoBasedModel: ExpandoBasedModel(regular_field=3)>]
 >>> expando_filter(qs, ef1=9)
 [<ExpandoBasedModel: ExpandoBasedModel(regular_field=3)>]
 >>> expando_filter(qs, ef1=13)
