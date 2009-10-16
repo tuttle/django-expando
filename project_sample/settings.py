@@ -16,5 +16,4 @@ ROOT_URLCONF = 'project_sample.nothing'
 INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django_expando',
-    'expando_tests',
 )

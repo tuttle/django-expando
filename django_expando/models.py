@@ -1,3 +1,5 @@
+import sys
+
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import smart_unicode
@@ -140,100 +142,8 @@ class ExpandoModel(models.Model):
         """
         return dict( (k, self.__dict__[k]) for k in self.get_expando_names() )
 
-def doctest():
-    """
->>> import sys; print >>sys.stderr, "(Running expando_tests.)",
 
->>> from project_sample.expando_tests.models import ExpandoBasedModel
-
->>> # ExpandoBasedModel has single standard CharField 'regular_field'.
-
->>> o = ExpandoBasedModel(regular_field=2)
->>> o.regular_field
-2
->>> o.strange_field
-Traceback (most recent call last):
-...
-AttributeError: 'ExpandoBasedModel(regular_field=2)' has no attribute 'strange_field'
->>> o.ef1 = 14
->>> o.save()
->>> del o
-
->>> o2 = ExpandoBasedModel.objects.get(regular_field='2') 
->>> o2.ef1
-u'14'
->>> o2.another_field
-Traceback (most recent call last):
-...
-AttributeError: There is neither regular field nor expando field 'another_field' for ExpandoBasedModel(regular_field=2)
->>> o2.ef2 = 20
->>> o2.ef1
-u'14'
->>> o2.save()
->>> del o2
-
->>> o3 = ExpandoBasedModel.objects.get(regular_field='2')
->>> o3.ef2
-u'20'
->>> o3.ef1
-u'14'
->>> o3.get_expando_fields()
-{'ef1': u'14', 'ef2': u'20'}
->>> o3.ef1 = 13
->>> o3.ef3 = 100
->>> o3.save()
->>> del o3
-
->>> o4 = ExpandoBasedModel.objects.get(regular_field='2')
->>> o4.ef3 = 'Hello World'
->>> o4.save()
->>> o4.get_expando_fields()
-{'ef1': u'13', 'ef2': u'20', 'ef3': 'Hello World'}
-
->>> o5 = ExpandoBasedModel.objects.get(regular_field='2')
->>> o5.get_expando_fields()
-{'ef1': u'13', 'ef2': u'20', 'ef3': u'Hello World'}
->>> del o5
-
->>> o6 = ExpandoBasedModel.objects.get(regular_field='2')
->>> del o6.ef2
->>> o6.save()
->>> del o6
-
->>> o7 = ExpandoBasedModel.objects.get(regular_field='2')
->>> o7.save()
-
->>> p = ExpandoBasedModel(regular_field=3)
->>> p.ef1 = 9
->>> p.save()
->>> del p
-
->>> from django_expando import expando_filter
-
->>> qs = ExpandoBasedModel.objects.all()
->>> qs
-[<ExpandoBasedModel: ExpandoBasedModel(regular_field=2)>, <ExpandoBasedModel: ExpandoBasedModel(regular_field=3)>]
->>> expando_filter(qs, ef1=9)
-[<ExpandoBasedModel: ExpandoBasedModel(regular_field=3)>]
->>> expando_filter(qs, ef1=13)
-[<ExpandoBasedModel: ExpandoBasedModel(regular_field=2)>]
->>> expando_filter(qs, ef1=100)
-[]
->>> expando_filter(qs, ef100=100011)
-[]
-
->>> expando_filter(qs, ef3='Hello World')
-[<ExpandoBasedModel: ExpandoBasedModel(regular_field=2)>]
->>> expando_filter(qs, ef3='hello world')
-[]
->>> expando_filter(qs, ef3__iexact='hello world')
-[<ExpandoBasedModel: ExpandoBasedModel(regular_field=2)>]
->>> expando_filter(qs, ef3__istartswith='hello')
-[<ExpandoBasedModel: ExpandoBasedModel(regular_field=2)>]
-
->>> for v in Expando.objects.values(): print v
-{'value': u'13', 'object_pk': u'1', 'id': 1, 'key': u'ef1', 'content_type_id': 3}
-{'value': u'Hello World', 'object_pk': u'1', 'id': 3, 'key': u'ef3', 'content_type_id': 3}
-{'value': u'9', 'object_pk': u'2', 'id': 4, 'key': u'ef1', 'content_type_id': 3}
-
-    """
+if sys.argv[0].endswith('manage.py') and sys.argv[1] == 'test':
+    # This is a hack to work around current Django inability to create some
+    # models only for testing. http://code.djangoproject.com/ticket/7835
+    from django_expando.tests import *

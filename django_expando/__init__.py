@@ -1,3 +1,5 @@
+from django.utils.encoding import smart_unicode
+
 from django_expando.models import Expando
 
 def expando_filter(model_qs, **kwargs):
@@ -12,6 +14,7 @@ def expando_filter(model_qs, **kwargs):
         except ValueError:
             lookup = ''
 
+        v = smart_unicode(v)
         kw = { 'key': k, 'value' + lookup: v }
         pks_ = Expando.objects.filter(**kw).values_list('object_pk', flat=True)
         try:
