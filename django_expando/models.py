@@ -112,12 +112,14 @@ class ExpandoModel(models.Model):
                 return self.__dict__[key]
             except KeyError:
                 raise AttributeError("There is neither regular field nor "
-                                     "expando field '%s' for %s" % (key, self))
+                                     "expando field '%s' for %s" \
+                                     % (key, self.__class__.__name__))
         else:
             if hasattr(super(ExpandoModel, self), '__getattr__'):
                 return super(ExpandoModel, self).__getattr__(key)
             else:
-                raise AttributeError("'%s' has no attribute '%s'" % (self, key))
+                raise AttributeError("%s has no attribute '%s'" \
+                                     % (self.__class__.__name__, key))
 
     def __setattr__(self, key, value):
         """ Needed to load expando fields now so save() properly detects
