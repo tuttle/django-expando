@@ -1,4 +1,5 @@
 from django.utils.encoding import smart_unicode
+from django.contrib.contenttypes.models import ContentType
 
 from django_expando.models import Expando
 
@@ -24,3 +25,10 @@ def expando_filter(model_qs, **kwargs):
 
     return model_qs.filter(pk__in=pks)
 
+def expando_distinct_values(model_class, field_name):
+    """ Returns all possible values for a specific expando field.
+        Useful for search forms widgets.
+    """
+    ct = ContentType.objects.get_for_model(model_class)
+    qs = Expando.objects.filter(content_type=ct, key=field_name)
+    return qs.distinct().values_list('value', flat=True)

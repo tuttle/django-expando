@@ -72,7 +72,7 @@ u'14'
 >>> p.save()
 >>> del p
 
->>> from django_expando import expando_filter
+>>> from django_expando import expando_filter, expando_distinct_values
 
 >>> qs = ExpandoBasedTestModel.objects.all()
 >>> qs
@@ -99,6 +99,9 @@ u'14'
 u'1', 1 u'ef1': u'13', 
 u'1', 3 u'ef3': u'Hello World', 
 u'2', 4 u'ef1': u'9', 
+
+>>> expando_distinct_values(ExpandoBasedTestModel, 'ef1')
+[u'13', u'9']
     """
     regular_field = models.CharField('Existing Field', max_length=32)
     regular_fk = models.ForeignKey(SomeReferencedModel, null=True)
